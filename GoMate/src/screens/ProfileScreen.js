@@ -6,16 +6,21 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Switch,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import * as Icon from 'react-native-feather';
 import { logoutUser } from '../redux/authSlice';
 import { clearFavourites } from '../redux/favouritesSlice';
+import { toggleThemeMode } from '../redux/themeSlice';
+import { getColors } from '../constants/Colors';
 
 export default function ProfileScreen() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const { items: favourites } = useSelector((state) => state.favourites);
+  const { isDark } = useSelector((state) => state.theme);
+  const colors = getColors(isDark);
 
   const handleLogout = () => {
     Alert.alert(
@@ -55,8 +60,9 @@ export default function ProfileScreen() {
         {
           text: 'Clear All',
           style: 'destructive',
-          onPress: () => {
+          onPress: async () => {
             dispatch(clearFavourites());
+            await AsyncStorage.removeItem('@favourites');
             Alert.alert('Success', 'All favourites have been cleared.');
           },
         },
@@ -65,26 +71,188 @@ export default function ProfileScreen() {
     );
   };
 
-  const ProfileOption = ({ icon: IconComponent, title, subtitle, onPress, danger }) => (
+  const handleToggleDarkMode = () => {
+    dispatch(toggleThemeMode());
+  };
+
+  const ProfileOption = ({ icon: IconComponent, title, subtitle, onPress, danger, hasSwitch, switchValue }) => (
     <TouchableOpacity
-      style={styles.optionCard}
+      style={[styles.optionCard, { backgroundColor: colors.card }]}
       onPress={onPress}
       activeOpacity={0.7}
+      disabled={hasSwitch}
     >
-      <View style={[styles.optionIconContainer, danger && styles.dangerIconContainer]}>
+      <View style={[styles.optionIconContainer, danger && styles.dangerIconContainer, { backgroundColor: danger ? '#FFE5E5' : isDark ? '#1C3A57' : '#E8F4FD' }]}>
         <IconComponent
-          stroke={danger ? '#FF3B30' : '#007AFF'}
+          stroke={danger ? '#FF3B30' : colors.primary}
           width={24}
           height={24}
         />
       </View>
       <View style={styles.optionContent}>
-        <Text style={[styles.optionTitle, danger && styles.dangerText]}>{title}</Text>
-        {subtitle && <Text style={styles.optionSubtitle}>{subtitle}</Text>}
+        <Text style={[styles.optionTitle, danger && styles.dangerText, { color: danger ? colors.danger : colors.text }]}>{title}</Text>
+        {subtitle && <Text style={[styles.optionSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text>}
       </View>
-      <Icon.ChevronRight stroke="#C7C7CC" width={20} height={20} />
+      {hasSwitch ? (
+        <Switch
+          value={switchValue}
+          onValueChange={onPress}
+          trackColor={{ false: '#767577', true: colors.primary }}
+          thumbColor={switchValue ? '#FFFFFF' : '#f4f3f4'}
+        />
+      ) : (
+        <Icon.ChevronRight stroke={colors.textSecondary} width={20} height={20} />
+      )}
     </TouchableOpacity>
   );
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      backgroundColor: colors.card,
+      alignItems: 'center',
+      paddingVertical: 32,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    avatarContainer: {
+      marginBottom: 16,
+    },
+    avatar: {
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 8,
+    },
+    avatarText: {
+      fontSize: 40,
+      fontWeight: 'bold',
+      color: '#FFFFFF',
+    },
+    name: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: colors.text,
+      marginBottom: 4,
+    },
+    email: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      marginBottom: 4,
+    },
+    username: {
+      fontSize: 16,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    statsContainer: {
+      flexDirection: 'row',
+      backgroundColor: colors.card,
+      paddingVertical: 20,
+      marginTop: 16,
+      marginHorizontal: 16,
+      borderRadius: 16,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    statCard: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    statNumber: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: colors.text,
+      marginTop: 8,
+    },
+    statLabel: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginTop: 4,
+    },
+    section: {
+      marginTop: 24,
+      paddingHorizontal: 16,
+    },
+    sectionTitle: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      textTransform: 'uppercase',
+      marginBottom: 12,
+      marginLeft: 4,
+    },
+    optionCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 8,
+    },
+    optionIconContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 16,
+    },
+    dangerIconContainer: {
+      backgroundColor: '#FFE5E5',
+    },
+    optionContent: {
+      flex: 1,
+    },
+    optionTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: 2,
+    },
+    dangerText: {
+      color: '#FF3B30',
+    },
+    optionSubtitle: {
+      fontSize: 13,
+    },
+    logoutButton: {
+      flexDirection: 'row',
+      backgroundColor: colors.danger,
+      borderRadius: 12,
+      paddingVertical: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginHorizontal: 16,
+      marginTop: 24,
+    },
+    logoutButtonText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: 'bold',
+      marginLeft: 8,
+    },
+    footer: {
+      alignItems: 'center',
+      paddingVertical: 32,
+    },
+    footerText: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginVertical: 2,
+    },
+  });
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -112,12 +280,12 @@ export default function ProfileScreen() {
           <Text style={styles.statLabel}>Favourites</Text>
         </View>
         <View style={styles.statCard}>
-          <Icon.MapPin stroke="#007AFF" width={24} height={24} />
+          <Icon.MapPin stroke={colors.primary} width={24} height={24} />
           <Text style={styles.statNumber}>0</Text>
           <Text style={styles.statLabel}>Visited</Text>
         </View>
         <View style={styles.statCard}>
-          <Icon.Bookmark stroke="#34C759" width={24} height={24} />
+          <Icon.Bookmark stroke={colors.success} width={24} height={24} />
           <Text style={styles.statNumber}>0</Text>
           <Text style={styles.statLabel}>Saved</Text>
         </View>
@@ -150,8 +318,10 @@ export default function ProfileScreen() {
         <ProfileOption
           icon={Icon.Moon}
           title="Dark Mode"
-          subtitle="Toggle dark mode (Bonus Feature)"
-          onPress={() => Alert.alert('Coming Soon', 'Dark mode feature coming soon!')}
+          subtitle={isDark ? 'Enabled' : 'Disabled'}
+          onPress={handleToggleDarkMode}
+          hasSwitch={true}
+          switchValue={isDark}
         />
       </View>
 
@@ -194,155 +364,3 @@ export default function ProfileScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F2F2F7',
-  },
-  header: {
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    paddingVertical: 32,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
-  },
-  avatarContainer: {
-    marginBottom: 16,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  avatarText: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000000',
-    marginBottom: 4,
-  },
-  email: {
-    fontSize: 14,
-    color: '#8E8E93',
-    marginBottom: 4,
-  },
-  username: {
-    fontSize: 16,
-    color: '#007AFF',
-    fontWeight: '600',
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 20,
-    marginTop: 16,
-    marginHorizontal: 16,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  statCard: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000000',
-    marginTop: 8,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginTop: 4,
-  },
-  section: {
-    marginTop: 24,
-    paddingHorizontal: 16,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#8E8E93',
-    textTransform: 'uppercase',
-    marginBottom: 12,
-    marginLeft: 4,
-  },
-  optionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-  },
-  optionIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#E8F4FD',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  dangerIconContainer: {
-    backgroundColor: '#FFE5E5',
-  },
-  optionContent: {
-    flex: 1,
-  },
-  optionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 2,
-  },
-  dangerText: {
-    color: '#FF3B30',
-  },
-  optionSubtitle: {
-    fontSize: 13,
-    color: '#8E8E93',
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    backgroundColor: '#FF3B30',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 16,
-    marginTop: 24,
-  },
-  logoutButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 8,
-  },
-  footer: {
-    alignItems: 'center',
-    paddingVertical: 32,
-  },
-  footerText: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginVertical: 2,
-  },
-});
