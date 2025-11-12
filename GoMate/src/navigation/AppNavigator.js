@@ -145,6 +145,9 @@ export default function AppNavigator() {
   const colors = getColors(isDark);
   const dispatch = useDispatch();
 
+  // Add this console log to debug
+  console.log('🔵 AppNavigator - isAuthenticated:', isAuthenticated);
+
   useEffect(() => {
     // Load persisted data when app starts
     dispatch(loadTheme());

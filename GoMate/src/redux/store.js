@@ -14,7 +14,14 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: false,
+      immutableCheck: false, // Add this for better performance
     }),
+});
+
+// Add this to debug state changes
+store.subscribe(() => {
+  const state = store.getState();
+  console.log('🔵 Store updated - isAuthenticated:', state.auth.isAuthenticated);
 });
 
 export default store;
