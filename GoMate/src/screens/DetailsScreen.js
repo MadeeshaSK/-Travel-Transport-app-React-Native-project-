@@ -306,7 +306,7 @@ export default function DetailsScreen({ route, navigation }) {
         >
           {isFavourite ? (
             <>
-              <Icon.HeartOff stroke="#FFFFFF" width={20} height={20} />
+              <Icon.X stroke="#FFFFFF" width={20} height={20} />
               <Text style={styles.actionButtonText}>Remove from Favourites</Text>
             </>
           ) : (

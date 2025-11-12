@@ -22,10 +22,16 @@ export default function FavouritesScreen({ navigation }) {
     dispatch(toggleFavourite(destination));
   };
 
+  const handleCardPress = (item) => {
+    // Ensure we're passing the complete destination object
+    console.log('Navigating to Details with:', item);
+    navigation.navigate('Details', { destination: item });
+  };
+
   const renderFavouriteCard = ({ item }) => (
     <TouchableOpacity
       style={[styles.card, { backgroundColor: colors.card }]}
-      onPress={() => navigation.navigate('Details', { destination: item })}
+      onPress={() => handleCardPress(item)}
       activeOpacity={0.7}
     >
       <Image source={{ uri: item.image }} style={styles.cardImage} />
@@ -36,7 +42,10 @@ export default function FavouritesScreen({ navigation }) {
             {item.name}
           </Text>
           <TouchableOpacity
-            onPress={() => handleRemoveFavourite(item)}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleRemoveFavourite(item);
+            }}
             style={styles.removeButton}
           >
             <Icon.Heart
@@ -221,7 +230,7 @@ export default function FavouritesScreen({ navigation }) {
         </Text>
         <TouchableOpacity
           style={styles.exploreButton}
-          onPress={() => navigation.navigate('Home')}
+          onPress={() => navigation.getParent().navigate('Home')}
         >
           <Icon.Compass stroke="#FFFFFF" width={20} height={20} />
           <Text style={styles.exploreButtonText}>Explore Destinations</Text>

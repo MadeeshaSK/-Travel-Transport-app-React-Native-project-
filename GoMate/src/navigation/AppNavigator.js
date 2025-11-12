@@ -1,9 +1,11 @@
 import React, { useEffect } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import * as Icon from 'react-native-feather';
+import { loadTheme } from '../redux/themeSlice';
+import { loadFavourites } from '../redux/favouritesSlice';
 
 // Auth Screens
 import LoginScreen from '../screens/LoginScreen';
@@ -141,6 +143,13 @@ export default function AppNavigator() {
   const { isAuthenticated } = useSelector((state) => state.auth);
   const { isDark } = useSelector((state) => state.theme);
   const colors = getColors(isDark);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    // Load persisted data when app starts
+    dispatch(loadTheme());
+    dispatch(loadFavourites());
+  }, [dispatch]);
 
   return (
     <Stack.Navigator

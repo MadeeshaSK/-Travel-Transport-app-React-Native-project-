@@ -5,6 +5,8 @@ import { store } from './src/redux/store';
 import AppNavigator from './src/navigation/AppNavigator';
 import { ActivityIndicator, View } from 'react-native';
 import { restoreUserSession } from './src/redux/authSlice';
+import { loadTheme } from './src/redux/themeSlice';
+import { loadFavourites } from './src/redux/favouritesSlice';
 
 function AppContent() {
   const [isLoading, setIsLoading] = useState(true);
@@ -18,6 +20,9 @@ function AppContent() {
     try {
       // Restore user session from AsyncStorage
       await dispatch(restoreUserSession());
+      // Load persisted data when app starts
+      dispatch(loadTheme());
+      dispatch(loadFavourites());
     } catch (error) {
       console.error('Error initializing app:', error);
     } finally {
