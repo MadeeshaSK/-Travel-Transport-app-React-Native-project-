@@ -1,25 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { Provider } from 'react-redux';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Provider, useDispatch } from 'react-redux';
 import { store } from './src/redux/store';
 import AppNavigator from './src/navigation/AppNavigator';
 import { ActivityIndicator, View } from 'react-native';
+import { restoreUserSession } from './src/redux/authSlice';
 
-export default function App() {
+function AppContent() {
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const dispatch = useDispatch();
 
   useEffect(() => {
-    checkAuthStatus();
+    initializeApp();
   }, []);
 
-  const checkAuthStatus = async () => {
+  const initializeApp = async () => {
     try {
-      const token = await AsyncStorage.getItem('userToken');
-      setIsAuthenticated(!!token);
+      // Restore user session from AsyncStorage
+      await dispatch(restoreUserSession());
     } catch (error) {
-      console.error('Error checking auth status:', error);
+      console.error('Error initializing app:', error);
     } finally {
       setIsLoading(false);
     }
@@ -27,17 +27,23 @@ export default function App() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F2F2F7' }}>
         <ActivityIndicator size="large" color="#007AFF" />
       </View>
     );
   }
 
   return (
+    <NavigationContainer>
+      <AppNavigator />
+    </NavigationContainer>
+  );
+}
+
+export default function App() {
+  return (
     <Provider store={store}>
-      <NavigationContainer>
-        <AppNavigator initialAuth={isAuthenticated} />
-      </NavigationContainer>
+      <AppContent />
     </Provider>
   );
 }

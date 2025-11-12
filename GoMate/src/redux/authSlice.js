@@ -49,6 +49,12 @@ const authSlice = createSlice({
       state.loading = false;
       state.error = action.payload;
     },
+    // ADD THIS NEW REDUCER
+    restoreSession: (state, action) => {
+      state.isAuthenticated = true;
+      state.user = action.payload.user;
+      state.token = action.payload.token;
+    },
   },
 });
 
@@ -60,6 +66,7 @@ export const {
   registerStart,
   registerSuccess,
   registerFailure,
+  restoreSession, // EXPORT THIS
 } = authSlice.actions;
 
 // Async thunks
@@ -130,12 +137,43 @@ export const registerUser = (userData) => async (dispatch) => {
 };
 
 export const logoutUser = () => async (dispatch) => {
+    try {
+      // Remove all stored data
+      await AsyncStorage.multiRemove(['userToken', 'userData', '@favourites']);
+      
+      // Dispatch logout action to reset Redux state
+      dispatch(logout());
+      
+      return Promise.resolve(); // Ensure the promise resolves
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still dispatch logout even if AsyncStorage fails
+      dispatch(logout());
+      return Promise.reject(error);
+    }
+  };
+
+// ADD THIS NEW THUNK - Restore session from AsyncStorage
+export const restoreUserSession = () => async (dispatch) => {
   try {
-    await AsyncStorage.removeItem('userToken');
-    await AsyncStorage.removeItem('userData');
-    dispatch(logout());
+    const token = await AsyncStorage.getItem('userToken');
+    const userData = await AsyncStorage.getItem('userData');
+    
+    if (token && userData) {
+      const user = JSON.parse(userData);
+      dispatch(restoreSession({
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        },
+        token: token,
+      }));
+    }
   } catch (error) {
-    console.error('Logout error:', error);
+    console.error('Error restoring session:', error);
   }
 };
 

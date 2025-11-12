@@ -9,6 +9,7 @@ import {
   Switch,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Icon from 'react-native-feather';
 import { logoutUser } from '../redux/authSlice';
 import { clearFavourites } from '../redux/favouritesSlice';
@@ -34,15 +35,23 @@ export default function ProfileScreen() {
         {
           text: 'Logout',
           style: 'destructive',
-          onPress: () => {
-            dispatch(logoutUser());
+          onPress: async () => {
+            console.log('🔴 Logout button pressed');
+            try {
+              const result = await dispatch(logoutUser()).unwrap();
+              console.log('✅ Logout successful:', result);
+            } catch (error) {
+              console.log('❌ Logout error:', error);
+              // Even if there's an error, the logout should still work
+              // because we handle it in the rejected case
+            }
           },
         },
       ],
       { cancelable: true }
     );
   };
-
+  
   const handleClearFavourites = () => {
     if (favourites.length === 0) {
       Alert.alert('No Favourites', 'You have no favourites to clear.');
@@ -82,15 +91,18 @@ export default function ProfileScreen() {
       activeOpacity={0.7}
       disabled={hasSwitch}
     >
-      <View style={[styles.optionIconContainer, danger && styles.dangerIconContainer, { backgroundColor: danger ? '#FFE5E5' : isDark ? '#1C3A57' : '#E8F4FD' }]}>
+      <View style={[
+        styles.optionIconContainer, 
+        { backgroundColor: danger ? (isDark ? '#3D2020' : '#FFE5E5') : (isDark ? '#1C3A57' : '#E8F4FD') }
+      ]}>
         <IconComponent
-          stroke={danger ? '#FF3B30' : colors.primary}
+          stroke={danger ? colors.danger : colors.primary}
           width={24}
           height={24}
         />
       </View>
       <View style={styles.optionContent}>
-        <Text style={[styles.optionTitle, danger && styles.dangerText, { color: danger ? colors.danger : colors.text }]}>{title}</Text>
+        <Text style={[styles.optionTitle, { color: danger ? colors.danger : colors.text }]}>{title}</Text>
         {subtitle && <Text style={[styles.optionSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text>}
       </View>
       {hasSwitch ? (
@@ -210,9 +222,6 @@ export default function ProfileScreen() {
       alignItems: 'center',
       marginRight: 16,
     },
-    dangerIconContainer: {
-      backgroundColor: '#FFE5E5',
-    },
     optionContent: {
       flex: 1,
     },
@@ -220,9 +229,6 @@ export default function ProfileScreen() {
       fontSize: 16,
       fontWeight: '600',
       marginBottom: 2,
-    },
-    dangerText: {
-      color: '#FF3B30',
     },
     optionSubtitle: {
       fontSize: 13,
@@ -275,7 +281,7 @@ export default function ProfileScreen() {
 
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
-          <Icon.Heart stroke="#FF3B30" fill="#FF3B30" width={24} height={24} />
+          <Icon.Heart stroke={colors.danger} fill={colors.danger} width={24} height={24} />
           <Text style={styles.statNumber}>{favourites.length}</Text>
           <Text style={styles.statLabel}>Favourites</Text>
         </View>

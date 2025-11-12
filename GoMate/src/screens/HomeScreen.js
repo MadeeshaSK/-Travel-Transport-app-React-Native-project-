@@ -9,18 +9,21 @@ import {
   ActivityIndicator,
   RefreshControl,
   TextInput,
-  Alert,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import * as Icon from 'react-native-feather';
 import { fetchDestinations } from '../redux/destinationsSlice';
 import { loadFavourites, toggleFavourite } from '../redux/favouritesSlice';
+import { getColors } from '../constants/Colors';
 
 export default function HomeScreen({ navigation }) {
   const dispatch = useDispatch();
   const { items, loading, error } = useSelector((state) => state.destinations);
   const { items: favourites } = useSelector((state) => state.favourites);
   const { user } = useSelector((state) => state.auth);
+  const { isDark } = useSelector((state) => state.theme);
+  const colors = getColors(isDark);
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -29,16 +32,6 @@ export default function HomeScreen({ navigation }) {
     dispatch(fetchDestinations());
     dispatch(loadFavourites());
   }, [dispatch]);
-
-  // Debug: Log state changes
-  useEffect(() => {
-    console.log('📊 Items:', items.length);
-    console.log('⏳ Loading:', loading);
-    console.log('❌ Error:', error);
-    if (items.length > 0) {
-      console.log('✅ First item:', items[0]);
-    }
-  }, [items, loading, error]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -59,9 +52,28 @@ export default function HomeScreen({ navigation }) {
     destination.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const getStatusStyle = (status) => {
+    const baseStyle = {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 8,
+    };
+    
+    switch (status) {
+      case 'Popular':
+        return { ...baseStyle, backgroundColor: isDark ? '#1C3A57' : '#E8F4FD' };
+      case 'Trending':
+        return { ...baseStyle, backgroundColor: isDark ? '#3D3420' : '#FFF4E5' };
+      case 'Must Visit':
+        return { ...baseStyle, backgroundColor: isDark ? '#3D2020' : '#FFE5E5' };
+      default:
+        return { ...baseStyle, backgroundColor: isDark ? '#1C3A57' : '#E8F4FD' };
+    }
+  };
+
   const renderDestinationCard = ({ item }) => (
     <TouchableOpacity
-      style={styles.card}
+      style={[styles.card, { backgroundColor: colors.card }]}
       onPress={() => navigation.navigate('Details', { destination: item })}
       activeOpacity={0.7}
     >
@@ -73,7 +85,7 @@ export default function HomeScreen({ navigation }) {
       
       <View style={styles.cardContent}>
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle} numberOfLines={1}>
+          <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
             {item.name}
           </Text>
           <TouchableOpacity
@@ -82,32 +94,32 @@ export default function HomeScreen({ navigation }) {
           >
             {isFavourite(item.id) ? (
               <Icon.Heart
-                stroke="#FF3B30"
-                fill="#FF3B30"
+                stroke={colors.danger}
+                fill={colors.danger}
                 width={24}
                 height={24}
               />
             ) : (
-              <Icon.Heart stroke="#8E8E93" width={24} height={24} />
+              <Icon.Heart stroke={colors.textSecondary} width={24} height={24} />
             )}
           </TouchableOpacity>
         </View>
 
         <View style={styles.cardInfo}>
-          <Icon.MapPin stroke="#007AFF" width={16} height={16} />
-          <Text style={styles.cardDescription} numberOfLines={1}>
+          <Icon.MapPin stroke={colors.primary} width={16} height={16} />
+          <Text style={[styles.cardDescription, { color: colors.textSecondary }]} numberOfLines={1}>
             {item.description}
           </Text>
         </View>
 
         <View style={styles.cardFooter}>
-          <View style={[styles.statusBadge, getStatusStyle(item.status)]}>
-            <Text style={styles.statusText}>{item.status}</Text>
+          <View style={getStatusStyle(item.status)}>
+            <Text style={[styles.statusText, { color: colors.text }]}>{item.status}</Text>
           </View>
           {item.capital && item.capital !== 'N/A' && (
             <View style={styles.capitalInfo}>
-              <Icon.Navigation stroke="#8E8E93" width={14} height={14} />
-              <Text style={styles.capitalText}>{item.capital}</Text>
+              <Icon.Navigation stroke={colors.textSecondary} width={14} height={14} />
+              <Text style={[styles.capitalText, { color: colors.textSecondary }]}>{item.capital}</Text>
             </View>
           )}
         </View>
@@ -115,38 +127,23 @@ export default function HomeScreen({ navigation }) {
     </TouchableOpacity>
   );
 
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case 'Popular':
-        return styles.popularBadge;
-      case 'Trending':
-        return styles.trendingBadge;
-      case 'Must Visit':
-        return styles.mustVisitBadge;
-      default:
-        return styles.popularBadge;
-    }
-  };
-
-  // Show loading
   if (loading && items.length === 0) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading destinations...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading destinations...</Text>
       </View>
     );
   }
 
-  // Show error
   if (error && items.length === 0) {
     return (
-      <View style={styles.loadingContainer}>
-        <Icon.AlertCircle stroke="#FF3B30" width={48} height={48} />
-        <Text style={styles.errorText}>Oops! Something went wrong</Text>
-        <Text style={styles.errorDetail}>{error}</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <Icon.AlertCircle stroke={colors.danger} width={48} height={48} />
+        <Text style={[styles.errorText, { color: colors.danger }]}>Oops! Something went wrong</Text>
+        <Text style={[styles.errorDetail, { color: colors.textSecondary }]}>{error}</Text>
         <TouchableOpacity 
-          style={styles.retryButton} 
+          style={[styles.retryButton, { backgroundColor: colors.primary }]}
           onPress={() => dispatch(fetchDestinations())}
         >
           <Text style={styles.retryButtonText}>Try Again</Text>
@@ -156,34 +153,32 @@ export default function HomeScreen({ navigation }) {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.headerContainer}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.headerContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <View style={styles.welcomeSection}>
-          <Text style={styles.welcomeText}>Welcome back,</Text>
-          <Text style={styles.userName}>
+          <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>Welcome back,</Text>
+          <Text style={[styles.userName, { color: colors.text }]}>
             {user?.firstName || user?.username || 'Traveler'}!
           </Text>
         </View>
         
-        <View style={styles.searchContainer}>
-          <Icon.Search stroke="#8E8E93" width={20} height={20} />
+        <View style={[styles.searchContainer, { backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7' }]}>
+          <Icon.Search stroke={colors.textSecondary} width={20} height={20} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: colors.text }]}
             placeholder="Search destinations..."
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Icon.X stroke="#8E8E93" width={20} height={20} />
+              <Icon.X stroke={colors.textSecondary} width={20} height={20} />
             </TouchableOpacity>
           )}
         </View>
       </View>
 
-      {/* List */}
       <FlatList
         data={filteredDestinations}
         renderItem={renderDestinationCard}
@@ -194,19 +189,16 @@ export default function HomeScreen({ navigation }) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#007AFF"
+            tintColor={colors.primary}
           />
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Icon.Search stroke="#8E8E93" width={48} height={48} />
-            <Text style={styles.emptyText}>No destinations found</Text>
+            <Icon.Search stroke={colors.textSecondary} width={48} height={48} />
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No destinations found</Text>
             <TouchableOpacity 
-              style={styles.retryButton} 
-              onPress={() => {
-                console.log('🔄 Manual reload clicked');
-                dispatch(fetchDestinations());
-              }}
+              style={[styles.retryButton, { backgroundColor: colors.primary }]}
+              onPress={() => dispatch(fetchDestinations())}
             >
               <Text style={styles.retryButtonText}>Load Destinations</Text>
             </TouchableOpacity>
@@ -220,57 +212,47 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
     padding: 20,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#8E8E93',
   },
   errorText: {
     marginTop: 16,
     fontSize: 18,
     fontWeight: '600',
-    color: '#FF3B30',
   },
   errorDetail: {
     marginTop: 8,
     fontSize: 14,
-    color: '#8E8E93',
     textAlign: 'center',
   },
   headerContainer: {
-    backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
   },
   welcomeSection: {
     marginBottom: 16,
   },
   welcomeText: {
     fontSize: 16,
-    color: '#8E8E93',
   },
   userName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#000000',
     marginTop: 4,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -279,13 +261,11 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 12,
     fontSize: 16,
-    color: '#000000',
   },
   listContainer: {
     padding: 16,
   },
   card: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     marginBottom: 16,
     overflow: 'hidden',
@@ -312,7 +292,6 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#000000',
     flex: 1,
     marginRight: 8,
   },
@@ -326,7 +305,6 @@ const styles = StyleSheet.create({
   },
   cardDescription: {
     fontSize: 14,
-    color: '#8E8E93',
     marginLeft: 8,
     flex: 1,
   },
@@ -335,24 +313,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  popularBadge: {
-    backgroundColor: '#E8F4FD',
-  },
-  trendingBadge: {
-    backgroundColor: '#FFF4E5',
-  },
-  mustVisitBadge: {
-    backgroundColor: '#FFE5E5',
-  },
   statusText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#000000',
   },
   capitalInfo: {
     flexDirection: 'row',
@@ -360,7 +323,6 @@ const styles = StyleSheet.create({
   },
   capitalText: {
     fontSize: 12,
-    color: '#8E8E93',
     marginLeft: 4,
   },
   emptyContainer: {
@@ -371,13 +333,11 @@ const styles = StyleSheet.create({
   emptyText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#8E8E93',
   },
   retryButton: {
     marginTop: 16,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: '#007AFF',
     borderRadius: 8,
   },
   retryButtonText: {
