@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   TextInput,
+  Alert,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import * as Icon from 'react-native-feather';
@@ -17,16 +18,27 @@ import { loadFavourites, toggleFavourite } from '../redux/favouritesSlice';
 
 export default function HomeScreen({ navigation }) {
   const dispatch = useDispatch();
-  const { items, loading } = useSelector((state) => state.destinations);
+  const { items, loading, error } = useSelector((state) => state.destinations);
   const { items: favourites } = useSelector((state) => state.favourites);
   const { user } = useSelector((state) => state.auth);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
+    console.log('🚀 HomeScreen: Fetching destinations...');
     dispatch(fetchDestinations());
     dispatch(loadFavourites());
   }, [dispatch]);
+
+  // Debug: Log state changes
+  useEffect(() => {
+    console.log('📊 Items:', items.length);
+    console.log('⏳ Loading:', loading);
+    console.log('❌ Error:', error);
+    if (items.length > 0) {
+      console.log('✅ First item:', items[0]);
+    }
+  }, [items, loading, error]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -53,7 +65,11 @@ export default function HomeScreen({ navigation }) {
       onPress={() => navigation.navigate('Details', { destination: item })}
       activeOpacity={0.7}
     >
-      <Image source={{ uri: item.image }} style={styles.cardImage} />
+      <Image 
+        source={{ uri: item.image }} 
+        style={styles.cardImage}
+        resizeMode="cover"
+      />
       
       <View style={styles.cardContent}>
         <View style={styles.cardHeader}>
@@ -88,7 +104,7 @@ export default function HomeScreen({ navigation }) {
           <View style={[styles.statusBadge, getStatusStyle(item.status)]}>
             <Text style={styles.statusText}>{item.status}</Text>
           </View>
-          {item.capital && (
+          {item.capital && item.capital !== 'N/A' && (
             <View style={styles.capitalInfo}>
               <Icon.Navigation stroke="#8E8E93" width={14} height={14} />
               <Text style={styles.capitalText}>{item.capital}</Text>
@@ -112,6 +128,7 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
+  // Show loading
   if (loading && items.length === 0) {
     return (
       <View style={styles.loadingContainer}>
@@ -121,8 +138,26 @@ export default function HomeScreen({ navigation }) {
     );
   }
 
+  // Show error
+  if (error && items.length === 0) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Icon.AlertCircle stroke="#FF3B30" width={48} height={48} />
+        <Text style={styles.errorText}>Oops! Something went wrong</Text>
+        <Text style={styles.errorDetail}>{error}</Text>
+        <TouchableOpacity 
+          style={styles.retryButton} 
+          onPress={() => dispatch(fetchDestinations())}
+        >
+          <Text style={styles.retryButtonText}>Try Again</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
+      {/* Header */}
       <View style={styles.headerContainer}>
         <View style={styles.welcomeSection}>
           <Text style={styles.welcomeText}>Welcome back,</Text>
@@ -148,6 +183,7 @@ export default function HomeScreen({ navigation }) {
         </View>
       </View>
 
+      {/* List */}
       <FlatList
         data={filteredDestinations}
         renderItem={renderDestinationCard}
@@ -165,6 +201,15 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.emptyContainer}>
             <Icon.Search stroke="#8E8E93" width={48} height={48} />
             <Text style={styles.emptyText}>No destinations found</Text>
+            <TouchableOpacity 
+              style={styles.retryButton} 
+              onPress={() => {
+                console.log('🔄 Manual reload clicked');
+                dispatch(fetchDestinations());
+              }}
+            >
+              <Text style={styles.retryButtonText}>Load Destinations</Text>
+            </TouchableOpacity>
           </View>
         }
       />
@@ -182,11 +227,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F2F2F7',
+    padding: 20,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
     color: '#8E8E93',
+  },
+  errorText: {
+    marginTop: 16,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FF3B30',
+  },
+  errorDetail: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#8E8E93',
+    textAlign: 'center',
   },
   headerContainer: {
     backgroundColor: '#FFFFFF',
@@ -294,6 +352,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     fontWeight: '600',
+    color: '#000000',
   },
   capitalInfo: {
     flexDirection: 'row',
@@ -313,5 +372,17 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: '#8E8E93',
+  },
+  retryButton: {
+    marginTop: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
